@@ -65,24 +65,16 @@ pipeline {
       }
     }
 
-    stage('Docker Build Image') {
+    stage('Docker Build Image and Push') {
       agent any                                                 // runs on the Jenkins container, which already has docker CLI & /certs mounted
       steps {
         script {
-            IMG = docker.build(DOCKER_IMAGE)
-        }
-      }
-    }
-
-    stage('Docker Push') {
-      agent any
-      steps {
-        script {
-          docker.withRegistry('https://index.docker.io/v1/', 'DOCKERHUB_CREDS') {       // Establishes a connection to Docker Hub
-            IMG.push()                                                                  // push BRANCH-BUILD tag
-            if ((env.BRANCH_NAME ?: 'main') == 'main') {
-              IMG.push('latest')                                                        // Conditionally pushes the image with the latest tag if the current branch is main
-            }
+            def img = docker.build(env.DOCKER_IMAGE)
+            docker.withRegistry('https://index.docker.io/v1/', 'DOCKERHUB_CREDS') {       // Establishes a connection to Docker Hub
+              img.push()                                                                  // push BRANCH-BUILD tag
+              if ((env.BRANCH_NAME ?: 'main') == 'main') {
+                img.push('latest')                                                        // Conditionally pushes the image with the latest tag if the current branch is main
+              }
           }
         }
       }
