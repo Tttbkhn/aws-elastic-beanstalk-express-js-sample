@@ -10,7 +10,7 @@ pipeline {
     // ----- Image naming -----
     IMAGE_NAME        = 'thanhthutruong/devsecops_assessment_2'
     IMAGE_TAG         = "${env.BRANCH_NAME ?: 'main'}-${env.BUILD_NUMBER}"
-    DOCKER_IMAGE      = "docker.io/${IMAGE_NAME}:${IMAGE_TAG}"
+    DOCKER_IMAGE      = "${IMAGE_NAME}:${IMAGE_TAG}"
 
     // Keep npm logs concise
     npm_config_loglevel = 'warn'
