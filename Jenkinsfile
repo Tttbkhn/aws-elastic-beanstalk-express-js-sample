@@ -1,10 +1,5 @@
 pipeline {
-  agent {
-    // Use Node 16 as the build agent (Dockerized)
-    docker {
-      image 'node:16'
-    }
-  }
+  agent none
 
   environment {
     // Docker remote host
@@ -29,6 +24,7 @@ pipeline {
 
   stages {
     stage('Install Dependencies') {
+      agent { docker { image 'node:16' } }
       steps {
         sh 'node -v && npm -v'                                  // Checks Node.js and npm versions. Verify that this is Node 16
         sh 'npm install --save'                                 // Installs dependencies from package.json.
@@ -41,22 +37,36 @@ pipeline {
     }
 
     stage('Run Unit Tests') {
+      agent { docker { image 'node:16' } }
       steps {
         sh 'npm test'                                           // Running npm test by executing the jest test suite
       }
     }
 
     stage('Dependency Scan (Snyk)') {
+      agent { docker { image 'node:16' } }
       environment { SNYK_TOKEN = credentials('SNYK_TOKEN') }
       steps {
         sh '''
           npx -y snyk@latest auth "${SNYK_TOKEN}"
-          npx -y snyk@latest test --severity-threshold=high
+          npx -y snyk@latest test --severity-threshold=high --json-file-output=reports/snyk.json
         '''
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'reports/snyk.json', allowEmptyArchive: true
+        }
+        success {
+          echo "Dependency scan success. No high/critical vulnerabilities found."
+        }
+        failure {
+          echo 'Dependency scan failed due to high/critical vulnerabilities.'
+        }
       }
     }
 
     stage('Docker Build Image') {
+      agent any                                                 // runs on the Jenkins container, which already has docker CLI & /certs mounted
       steps {
         script {
             IMG = docker.build(DOCKER_IMAGE)
@@ -65,6 +75,7 @@ pipeline {
     }
 
     stage('Docker Push') {
+      agent any
       steps {
         script {
           docker.withRegistry('https://index.docker.io/v1/', 'DOCKERHUB_CREDS') {       // Establishes a connection to Docker Hub
