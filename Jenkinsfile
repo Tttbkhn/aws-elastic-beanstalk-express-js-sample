@@ -83,10 +83,10 @@ pipeline {
       echo "Build finished: ${currentBuild.currentResult}"
     }
     success {
-      echo "Image pushed: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+      echo "Image pushed: ${DOCKER_IMAGE}"
     }
     failure {
-      echo "Build failed. Check logs above (install/tests/scan/build/push)."
+      echo "Build failed. Check logs above."
     }
   }
 }
